@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import { EmptyState } from './components/EmptyState';
 import { FestivalGrid } from './components/FestivalGrid';
 import { ResultsHeader } from './components/ResultsHeader';
@@ -7,6 +8,38 @@ import { useFestivalFilters } from './hooks/useFestivalFilters';
 
 function App() {
   const filters = useFestivalFilters(festivals);
+  const [isShareCopied, setIsShareCopied] = useState(false);
+  const shareResetTimeout = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (shareResetTimeout.current) window.clearTimeout(shareResetTimeout.current);
+    };
+  }, []);
+
+  async function handleShareResults() {
+    const shareData = {
+      text: `${filters.filteredFestivals.length} festivales encontrados`,
+      title: 'Resultados de festivales',
+      url: filters.shareUrl,
+    };
+
+    try {
+      if (navigator.share && (!navigator.canShare || navigator.canShare(shareData))) {
+        await navigator.share(shareData);
+      } else {
+        await navigator.clipboard.writeText(filters.shareUrl);
+      }
+
+      setIsShareCopied(true);
+      if (shareResetTimeout.current) window.clearTimeout(shareResetTimeout.current);
+      shareResetTimeout.current = window.setTimeout(() => setIsShareCopied(false), 2200);
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') return;
+      await navigator.clipboard.writeText(filters.shareUrl);
+      setIsShareCopied(true);
+    }
+  }
 
   return (
     <main className="app-shell">
@@ -45,6 +78,8 @@ function App() {
 
       <ResultsHeader
         activeFilters={filters.activeFilters}
+        isShareCopied={isShareCopied}
+        onShare={handleShareResults}
         resultCount={filters.filteredFestivals.length}
       />
 

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Fuse from 'fuse.js';
 import type { IFuseOptions } from 'fuse.js';
 import type { Festival, SelectOption } from '../types';
@@ -37,6 +37,75 @@ const fuseOptions: IFuseOptions<Festival> = {
   threshold: 0.35,
 };
 
+const filterParamKeys = ['q', 'place', 'style', 'month', 'from', 'to', 'price', 'confirmed', 'past'];
+
+function getInitialSearchParams() {
+  if (typeof window === 'undefined') return new URLSearchParams();
+  return new URLSearchParams(window.location.search);
+}
+
+function getParamList(params: URLSearchParams, key: string) {
+  return params
+    .getAll(key)
+    .flatMap((value) => value.split(','))
+    .map((value) => value.trim())
+    .filter(Boolean);
+}
+
+function getInitialMaxPrice(params: URLSearchParams) {
+  if (!params.has('price')) return null;
+  const value = Number(params.get('price'));
+  return Number.isFinite(value) ? value : null;
+}
+
+function setParamList(params: URLSearchParams, key: string, values: string[]) {
+  params.delete(key);
+  values.forEach((value) => {
+    params.append(key, value);
+  });
+}
+
+function buildShareUrl({
+  confirmedOnly,
+  dateFrom,
+  dateTo,
+  hidePast,
+  maxPrice,
+  priceRange,
+  query,
+  selectedMonths,
+  selectedPlaces,
+  selectedStyles,
+}: {
+  confirmedOnly: boolean;
+  dateFrom: string;
+  dateTo: string;
+  hidePast: boolean;
+  maxPrice: number;
+  priceRange: PriceRange;
+  query: string;
+  selectedMonths: string[];
+  selectedPlaces: string[];
+  selectedStyles: string[];
+}) {
+  if (typeof window === 'undefined') return '';
+
+  const url = new URL(window.location.href);
+  filterParamKeys.forEach((key) => url.searchParams.delete(key));
+
+  if (query.trim()) url.searchParams.set('q', query.trim());
+  setParamList(url.searchParams, 'place', selectedPlaces);
+  setParamList(url.searchParams, 'style', selectedStyles);
+  setParamList(url.searchParams, 'month', selectedMonths);
+  if (dateFrom) url.searchParams.set('from', dateFrom);
+  if (dateTo) url.searchParams.set('to', dateTo);
+  if (maxPrice < priceRange.max) url.searchParams.set('price', String(maxPrice));
+  if (confirmedOnly) url.searchParams.set('confirmed', '1');
+  if (!hidePast) url.searchParams.set('past', 'show');
+
+  return url.toString();
+}
+
 function sortByDateAndName(a: Festival, b: Festival) {
   const aDate = a.start_date ?? '9999-12-31';
   const bDate = b.start_date ?? '9999-12-31';
@@ -65,14 +134,21 @@ function getFestivalMinPrice(festival: Festival) {
 }
 
 export function useFestivalFilters(festivals: Festival[]) {
-  const [query, setQuery] = useState('');
-  const [selectedPlaces, setSelectedPlaces] = useState<string[]>([]);
-  const [selectedStyles, setSelectedStyles] = useState<string[]>([]);
-  const [selectedMonths, setSelectedMonths] = useState<string[]>([]);
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
-  const [confirmedOnly, setConfirmedOnly] = useState(false);
-  const [hidePast, setHidePast] = useState(true);
+  const initialParams = useMemo(getInitialSearchParams, []);
+  const [query, setQuery] = useState(() => initialParams.get('q') ?? '');
+  const [selectedPlaces, setSelectedPlaces] = useState<string[]>(() =>
+    getParamList(initialParams, 'place'),
+  );
+  const [selectedStyles, setSelectedStyles] = useState<string[]>(() =>
+    getParamList(initialParams, 'style'),
+  );
+  const [selectedMonths, setSelectedMonths] = useState<string[]>(() =>
+    getParamList(initialParams, 'month'),
+  );
+  const [dateFrom, setDateFrom] = useState(() => initialParams.get('from') ?? '');
+  const [dateTo, setDateTo] = useState(() => initialParams.get('to') ?? '');
+  const [confirmedOnly, setConfirmedOnly] = useState(() => initialParams.get('confirmed') === '1');
+  const [hidePast, setHidePast] = useState(() => initialParams.get('past') !== 'show');
 
   const priceRange = useMemo<PriceRange>(() => {
     const prices = festivals
@@ -85,8 +161,11 @@ export function useFestivalFilters(festivals: Festival[]) {
     };
   }, [festivals]);
 
-  const [maxPrice, setMaxPrice] = useState<number | null>(null);
-  const selectedMaxPrice = maxPrice ?? priceRange.max;
+  const [maxPrice, setMaxPrice] = useState<number | null>(() => getInitialMaxPrice(initialParams));
+  const selectedMaxPrice = Math.min(
+    Math.max(maxPrice ?? priceRange.max, priceRange.min),
+    priceRange.max,
+  );
 
   const options = useMemo(() => {
     const places = [...new Set(festivals.map(getPlace))]
@@ -162,6 +241,39 @@ export function useFestivalFilters(festivals: Festival[]) {
     Number(confirmedOnly) +
     Number(hidePast);
 
+  const shareUrl = useMemo(
+    () =>
+      buildShareUrl({
+        confirmedOnly,
+        dateFrom,
+        dateTo,
+        hidePast,
+        maxPrice: selectedMaxPrice,
+        priceRange,
+        query,
+        selectedMonths,
+        selectedPlaces,
+        selectedStyles,
+      }),
+    [
+      confirmedOnly,
+      dateFrom,
+      dateTo,
+      hidePast,
+      priceRange,
+      query,
+      selectedMaxPrice,
+      selectedMonths,
+      selectedPlaces,
+      selectedStyles,
+    ],
+  );
+
+  useEffect(() => {
+    if (!shareUrl || typeof window === 'undefined') return;
+    window.history.replaceState(null, '', shareUrl);
+  }, [shareUrl]);
+
   function resetFilters() {
     setQuery('');
     setSelectedPlaces([]);
@@ -198,6 +310,7 @@ export function useFestivalFilters(festivals: Festival[]) {
     setSelectedMonths,
     setSelectedPlaces,
     setSelectedStyles,
+    shareUrl,
     toggleValue,
   };
 }

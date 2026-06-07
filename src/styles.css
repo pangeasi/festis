@@ -417,6 +417,34 @@ h2 {
   padding: 0 14px;
 }
 
+.results-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.share-results-button {
+  align-items: center;
+  background: #fff;
+  border: 1px solid #c9c8c0;
+  border-radius: 999px;
+  color: #17211d;
+  cursor: pointer;
+  display: inline-flex;
+  font-weight: 800;
+  gap: 8px;
+  min-height: 38px;
+  padding: 0 14px;
+}
+
+.share-results-button:hover,
+.share-results-button:focus-visible {
+  border-color: #127b68;
+  color: #125d51;
+}
+
 .festival-grid {
   display: grid;
   gap: 18px;
@@ -442,6 +470,7 @@ h2 {
   aspect-ratio: 16 / 9;
   background: #dcdad0;
   border-radius: 7px 7px 0 0;
+  min-width: 0;
   overflow: hidden;
   position: relative;
 }
@@ -524,6 +553,7 @@ h2 {
   display: flex;
   flex-direction: column;
   gap: 13px;
+  min-width: 0;
   padding: 16px;
 }
 
@@ -579,6 +609,7 @@ h2 {
 .artist-list {
   display: grid;
   gap: 8px;
+  min-width: 0;
 }
 
 .artist-list-title {
@@ -588,6 +619,7 @@ h2 {
   font-size: 0.78rem;
   font-weight: 900;
   gap: 6px;
+  min-width: 0;
   text-transform: uppercase;
 }
 
@@ -595,6 +627,7 @@ h2 {
   display: flex;
   flex-wrap: wrap;
   gap: 7px;
+  min-width: 0;
 }
 
 .artist-chip {
@@ -606,6 +639,7 @@ h2 {
   font-size: 0.76rem;
   font-weight: 850;
   max-width: 100%;
+  min-width: 0;
   overflow: hidden;
   padding: 6px 9px;
   text-overflow: ellipsis;
@@ -634,7 +668,7 @@ h2 {
   border-radius: 8px;
   box-shadow: 0 16px 36px rgba(23, 33, 29, 0.28);
   color: #fff;
-  display: grid;
+  display: none;
   max-width: calc(100vw - 24px);
   min-width: 180px;
   opacity: 0;
@@ -723,6 +757,7 @@ h2 {
 }
 
 .floating-tooltip.is-open {
+  display: grid;
   opacity: 1;
   pointer-events: auto;
   transform: translateY(0);
@@ -1097,6 +1132,11 @@ h2 {
 
   .reset-button {
     justify-content: center;
+    width: 100%;
+  }
+
+  .results-actions {
+    justify-content: flex-start;
     width: 100%;
   }
 }
