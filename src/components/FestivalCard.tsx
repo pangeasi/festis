@@ -53,6 +53,9 @@ type TooltipScrollbarStyle = CSSProperties & {
   '--tooltip-scroll-thumb-top'?: string;
 };
 
+const TOOLTIP_OPEN_DELAY_MS = 160;
+const TOOLTIP_CLOSE_DELAY_MS = 180;
+
 type OfficialIconLinkProps = {
   href: string;
   icon: LucideIcon;
@@ -131,6 +134,50 @@ function getSourceLabel(source: string, index: number) {
   } catch {
     return `Fuente ${index + 1}`;
   }
+}
+
+function useDelayedTooltip(canOpen = true) {
+  const timeoutRef = useRef<number | undefined>(undefined);
+  const [isOpen, setIsOpen] = useState(false);
+
+  const close = useCallback(() => {
+    window.clearTimeout(timeoutRef.current);
+    setIsOpen(false);
+  }, []);
+
+  const open = useCallback(() => {
+    window.clearTimeout(timeoutRef.current);
+
+    if (!canOpen) {
+      setIsOpen(false);
+      return;
+    }
+
+    timeoutRef.current = window.setTimeout(() => {
+      setIsOpen(true);
+    }, TOOLTIP_OPEN_DELAY_MS);
+  }, [canOpen]);
+
+  const scheduleClose = useCallback(() => {
+    window.clearTimeout(timeoutRef.current);
+    timeoutRef.current = window.setTimeout(() => {
+      setIsOpen(false);
+    }, TOOLTIP_CLOSE_DELAY_MS);
+  }, []);
+
+  useEffect(() => {
+    if (!canOpen) {
+      close();
+    }
+  }, [canOpen, close]);
+
+  useEffect(() => {
+    return () => {
+      window.clearTimeout(timeoutRef.current);
+    };
+  }, []);
+
+  return { close, isOpen, open, scheduleClose };
 }
 
 function FloatingTooltip<T extends HTMLElement>({
@@ -224,31 +271,12 @@ function FloatingTooltip<T extends HTMLElement>({
 
 function OfficialIconLink({ href, icon: Icon, id, label }: OfficialIconLinkProps) {
   const triggerRef = useRef<HTMLAnchorElement>(null);
-  const closeTooltipTimeoutRef = useRef<number | undefined>(undefined);
-  const [isTooltipOpen, setIsTooltipOpen] = useState(false);
-
-  const closeTooltip = useCallback(() => {
-    window.clearTimeout(closeTooltipTimeoutRef.current);
-    setIsTooltipOpen(false);
-  }, []);
-
-  const openTooltip = useCallback(() => {
-    window.clearTimeout(closeTooltipTimeoutRef.current);
-    setIsTooltipOpen(true);
-  }, []);
-
-  const scheduleCloseTooltip = useCallback(() => {
-    window.clearTimeout(closeTooltipTimeoutRef.current);
-    closeTooltipTimeoutRef.current = window.setTimeout(() => {
-      setIsTooltipOpen(false);
-    }, 180);
-  }, []);
-
-  useEffect(() => {
-    return () => {
-      window.clearTimeout(closeTooltipTimeoutRef.current);
-    };
-  }, []);
+  const {
+    close: closeTooltip,
+    isOpen: isTooltipOpen,
+    open: openTooltip,
+    scheduleClose: scheduleCloseTooltip,
+  } = useDelayedTooltip();
 
   return (
     <span
@@ -291,28 +319,45 @@ function OfficialIconLink({ href, icon: Icon, id, label }: OfficialIconLinkProps
 export function FestivalCard({ festival }: FestivalCardProps) {
   const overflowTriggerRef = useRef<HTMLButtonElement>(null);
   const tooltipListRef = useRef<HTMLSpanElement>(null);
-  const closeTooltipTimeoutRef = useRef<number | undefined>(undefined);
   const descriptionRef = useRef<HTMLParagraphElement>(null);
-  const closeDescriptionTooltipTimeoutRef = useRef<number | undefined>(undefined);
   const priceTriggerRef = useRef<HTMLButtonElement>(null);
-  const closePriceTooltipTimeoutRef = useRef<number | undefined>(undefined);
   const programTriggerRef = useRef<HTMLButtonElement>(null);
-  const closeProgramTooltipTimeoutRef = useRef<number | undefined>(undefined);
   const confidenceTriggerRef = useRef<HTMLButtonElement>(null);
-  const closeConfidenceTooltipTimeoutRef = useRef<number | undefined>(undefined);
-  const [isTooltipOpen, setIsTooltipOpen] = useState(false);
   const [tooltipScrollbarStyle, setTooltipScrollbarStyle] = useState<TooltipScrollbarStyle>();
   const [isDescriptionOverflowing, setIsDescriptionOverflowing] = useState(false);
-  const [isDescriptionTooltipOpen, setIsDescriptionTooltipOpen] = useState(false);
-  const [isPriceTooltipOpen, setIsPriceTooltipOpen] = useState(false);
-  const [isProgramTooltipOpen, setIsProgramTooltipOpen] = useState(false);
-  const [isConfidenceTooltipOpen, setIsConfidenceTooltipOpen] = useState(false);
+  const {
+    close: closeTooltip,
+    isOpen: isTooltipOpen,
+    open: openTooltip,
+    scheduleClose: scheduleCloseTooltip,
+  } = useDelayedTooltip();
+  const {
+    close: closeDescriptionTooltip,
+    isOpen: isDescriptionTooltipOpen,
+    open: openDescriptionTooltip,
+    scheduleClose: scheduleCloseDescriptionTooltip,
+  } = useDelayedTooltip(isDescriptionOverflowing);
+  const {
+    close: closePriceTooltip,
+    isOpen: isPriceTooltipOpen,
+    open: openPriceTooltip,
+    scheduleClose: scheduleClosePriceTooltip,
+  } = useDelayedTooltip();
+  const {
+    close: closeProgramTooltip,
+    isOpen: isProgramTooltipOpen,
+    open: openProgramTooltip,
+    scheduleClose: scheduleCloseProgramTooltip,
+  } = useDelayedTooltip();
+  const {
+    close: closeConfidenceTooltip,
+    isOpen: isConfidenceTooltipOpen,
+    open: openConfidenceTooltip,
+    scheduleClose: scheduleCloseConfidenceTooltip,
+  } = useDelayedTooltip();
   const ticketUrl =
     festival.ticket_url && !pointsToModoFestival(festival.ticket_url) ? festival.ticket_url : null;
-  const festivalUrl =
-    festival.festival_url && !pointsToModoFestival(festival.festival_url)
-      ? festival.festival_url
-      : null;
+  const festivalUrl = `/festival/${festival.slug}`;
   const officialUrl =
     festival.official_url && !pointsToModoFestival(festival.official_url)
       ? festival.official_url
@@ -335,93 +380,6 @@ export function FestivalCard({ festival }: FestivalCardProps) {
     socialUrls.length > 0 ||
     officialSources.length > 0 ||
     confidenceLabel;
-
-  const closeTooltip = useCallback(() => {
-    window.clearTimeout(closeTooltipTimeoutRef.current);
-    setIsTooltipOpen(false);
-  }, []);
-
-  const openTooltip = useCallback(() => {
-    window.clearTimeout(closeTooltipTimeoutRef.current);
-    setIsTooltipOpen(true);
-  }, []);
-
-  const scheduleCloseTooltip = useCallback(() => {
-    window.clearTimeout(closeTooltipTimeoutRef.current);
-    closeTooltipTimeoutRef.current = window.setTimeout(() => {
-      setIsTooltipOpen(false);
-    }, 180);
-  }, []);
-
-  const closeDescriptionTooltip = useCallback(() => {
-    window.clearTimeout(closeDescriptionTooltipTimeoutRef.current);
-    setIsDescriptionTooltipOpen(false);
-  }, []);
-
-  const openDescriptionTooltip = useCallback(() => {
-    if (!isDescriptionOverflowing) return;
-
-    window.clearTimeout(closeDescriptionTooltipTimeoutRef.current);
-    setIsDescriptionTooltipOpen(true);
-  }, [isDescriptionOverflowing]);
-
-  const scheduleCloseDescriptionTooltip = useCallback(() => {
-    window.clearTimeout(closeDescriptionTooltipTimeoutRef.current);
-    closeDescriptionTooltipTimeoutRef.current = window.setTimeout(() => {
-      setIsDescriptionTooltipOpen(false);
-    }, 180);
-  }, []);
-
-  const closePriceTooltip = useCallback(() => {
-    window.clearTimeout(closePriceTooltipTimeoutRef.current);
-    setIsPriceTooltipOpen(false);
-  }, []);
-
-  const openPriceTooltip = useCallback(() => {
-    window.clearTimeout(closePriceTooltipTimeoutRef.current);
-    setIsPriceTooltipOpen(true);
-  }, []);
-
-  const scheduleClosePriceTooltip = useCallback(() => {
-    window.clearTimeout(closePriceTooltipTimeoutRef.current);
-    closePriceTooltipTimeoutRef.current = window.setTimeout(() => {
-      setIsPriceTooltipOpen(false);
-    }, 180);
-  }, []);
-
-  const closeProgramTooltip = useCallback(() => {
-    window.clearTimeout(closeProgramTooltipTimeoutRef.current);
-    setIsProgramTooltipOpen(false);
-  }, []);
-
-  const openProgramTooltip = useCallback(() => {
-    window.clearTimeout(closeProgramTooltipTimeoutRef.current);
-    setIsProgramTooltipOpen(true);
-  }, []);
-
-  const scheduleCloseProgramTooltip = useCallback(() => {
-    window.clearTimeout(closeProgramTooltipTimeoutRef.current);
-    closeProgramTooltipTimeoutRef.current = window.setTimeout(() => {
-      setIsProgramTooltipOpen(false);
-    }, 180);
-  }, []);
-
-  const closeConfidenceTooltip = useCallback(() => {
-    window.clearTimeout(closeConfidenceTooltipTimeoutRef.current);
-    setIsConfidenceTooltipOpen(false);
-  }, []);
-
-  const openConfidenceTooltip = useCallback(() => {
-    window.clearTimeout(closeConfidenceTooltipTimeoutRef.current);
-    setIsConfidenceTooltipOpen(true);
-  }, []);
-
-  const scheduleCloseConfidenceTooltip = useCallback(() => {
-    window.clearTimeout(closeConfidenceTooltipTimeoutRef.current);
-    closeConfidenceTooltipTimeoutRef.current = window.setTimeout(() => {
-      setIsConfidenceTooltipOpen(false);
-    }, 180);
-  }, []);
 
   const positionTooltipScrollbar = useCallback(() => {
     const list = tooltipListRef.current;
@@ -473,7 +431,7 @@ export function FestivalCard({ festival }: FestivalCardProps) {
 
     if (!description) {
       setIsDescriptionOverflowing(false);
-      setIsDescriptionTooltipOpen(false);
+      closeDescriptionTooltip();
       return undefined;
     }
 
@@ -483,7 +441,7 @@ export function FestivalCard({ festival }: FestivalCardProps) {
       setIsDescriptionOverflowing(isOverflowing);
 
       if (!isOverflowing) {
-        setIsDescriptionTooltipOpen(false);
+        closeDescriptionTooltip();
       }
     };
 
@@ -497,17 +455,7 @@ export function FestivalCard({ festival }: FestivalCardProps) {
       resizeObserver.disconnect();
       window.removeEventListener('resize', checkDescriptionOverflow);
     };
-  }, [festival.description]);
-
-  useEffect(() => {
-    return () => {
-      window.clearTimeout(closeTooltipTimeoutRef.current);
-      window.clearTimeout(closeDescriptionTooltipTimeoutRef.current);
-      window.clearTimeout(closePriceTooltipTimeoutRef.current);
-      window.clearTimeout(closeProgramTooltipTimeoutRef.current);
-      window.clearTimeout(closeConfidenceTooltipTimeoutRef.current);
-    };
-  }, []);
+  }, [closeDescriptionTooltip, festival.description]);
 
   return (
     <article className="festival-card">
@@ -859,7 +807,7 @@ export function FestivalCard({ festival }: FestivalCardProps) {
             </a>
           )}
           {festivalUrl && (
-            <a href={festivalUrl} rel="noreferrer" target="_blank">
+            <a href={festivalUrl}>
               Ver ficha
             </a>
           )}

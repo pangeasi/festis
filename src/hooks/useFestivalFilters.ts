@@ -39,7 +39,8 @@ const fuseOptions: IFuseOptions<Festival> = {
 
 const filterParamKeys = ['q', 'place', 'style', 'month', 'from', 'to', 'price', 'confirmed', 'past'];
 
-function getInitialSearchParams() {
+function getInitialSearchParams(initialUrl?: string) {
+  if (initialUrl) return new URLSearchParams(new URL(initialUrl, 'http://localhost').search);
   if (typeof window === 'undefined') return new URLSearchParams();
   return new URLSearchParams(window.location.search);
 }
@@ -133,8 +134,8 @@ function getFestivalMinPrice(festival: Festival) {
   return null;
 }
 
-export function useFestivalFilters(festivals: Festival[]) {
-  const initialParams = useMemo(getInitialSearchParams, []);
+export function useFestivalFilters(festivals: Festival[], initialUrl?: string) {
+  const initialParams = useMemo(() => getInitialSearchParams(initialUrl), [initialUrl]);
   const [query, setQuery] = useState(() => initialParams.get('q') ?? '');
   const [selectedPlaces, setSelectedPlaces] = useState<string[]>(() =>
     getParamList(initialParams, 'place'),
