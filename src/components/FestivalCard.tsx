@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { CSSProperties, ReactNode, RefObject, WheelEvent } from 'react';
+import { createPortal } from 'react-dom';
 import {
   CalendarDays,
   ExternalLink,
@@ -195,6 +196,7 @@ function FloatingTooltip<T extends HTMLElement>({
   const tooltipRef = useRef<HTMLSpanElement>(null);
   const [placement, setPlacement] = useState<TooltipPlacement>('bottom');
   const [style, setStyle] = useState<TooltipStyle>();
+  const [isMounted, setIsMounted] = useState(false);
 
   const positionTooltip = useCallback(() => {
     const trigger = triggerRef.current;
@@ -204,24 +206,32 @@ function FloatingTooltip<T extends HTMLElement>({
 
     const triggerRect = trigger.getBoundingClientRect();
     const tooltipRect = tooltip.getBoundingClientRect();
-    const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
+    const visualViewport = window.visualViewport;
+    const viewportLeft = visualViewport?.offsetLeft ?? 0;
+    const viewportTop = visualViewport?.offsetTop ?? 0;
+    const viewportWidth = visualViewport?.width ?? window.innerWidth;
+    const viewportHeight = visualViewport?.height ?? window.innerHeight;
     const margin = 12;
     const gap = 8;
-    const triggerCenter = triggerRect.left + triggerRect.width / 2;
+    const triggerTop = viewportTop + triggerRect.top;
+    const triggerBottom = viewportTop + triggerRect.bottom;
+    const triggerCenter = viewportLeft + triggerRect.left + triggerRect.width / 2;
     const tooltipWidth = Math.min(tooltipRect.width, viewportWidth - margin * 2);
     const left = Math.min(
-      Math.max(triggerCenter - tooltipWidth / 2, margin),
-      viewportWidth - tooltipWidth - margin,
+      Math.max(triggerCenter - tooltipWidth / 2, viewportLeft + margin),
+      viewportLeft + viewportWidth - tooltipWidth - margin,
     );
-    const spaceBelow = viewportHeight - triggerRect.bottom;
-    const spaceAbove = triggerRect.top;
+    const spaceBelow = viewportTop + viewportHeight - triggerBottom;
+    const spaceAbove = triggerTop - viewportTop;
     const nextPlacement =
       spaceBelow < tooltipRect.height + gap + margin && spaceAbove > spaceBelow ? 'top' : 'bottom';
     const top =
       nextPlacement === 'top'
-        ? Math.max(triggerRect.top - tooltipRect.height - gap, margin)
-        : Math.min(triggerRect.bottom + gap, viewportHeight - tooltipRect.height - margin);
+        ? Math.max(triggerTop - tooltipRect.height - gap, viewportTop + margin)
+        : Math.min(
+            triggerBottom + gap,
+            viewportTop + viewportHeight - tooltipRect.height - margin,
+          );
     const arrowLeft = Math.min(Math.max(triggerCenter - left, 14), tooltipWidth - 14);
 
     setPlacement(nextPlacement);
@@ -240,18 +250,28 @@ function FloatingTooltip<T extends HTMLElement>({
   }, [isOpen, positionTooltip]);
 
   useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
     if (!isOpen) return undefined;
+
+    const visualViewport = window.visualViewport;
 
     window.addEventListener('resize', positionTooltip);
     window.addEventListener('scroll', positionTooltip, true);
+    visualViewport?.addEventListener('resize', positionTooltip);
+    visualViewport?.addEventListener('scroll', positionTooltip);
 
     return () => {
       window.removeEventListener('resize', positionTooltip);
       window.removeEventListener('scroll', positionTooltip, true);
+      visualViewport?.removeEventListener('resize', positionTooltip);
+      visualViewport?.removeEventListener('scroll', positionTooltip);
     };
   }, [isOpen, positionTooltip]);
 
-  return (
+  const tooltipElement = (
     <span
       aria-label={ariaLabel}
       className={`floating-tooltip${className ? ` ${className}` : ''}${isOpen ? ' is-open' : ''}`}
@@ -267,6 +287,8 @@ function FloatingTooltip<T extends HTMLElement>({
       {children}
     </span>
   );
+
+  return isMounted ? createPortal(tooltipElement, document.body) : tooltipElement;
 }
 
 function OfficialIconLink({ href, icon: Icon, id, label }: OfficialIconLinkProps) {
