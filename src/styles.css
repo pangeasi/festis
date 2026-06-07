@@ -1205,11 +1205,16 @@ h2 {
 
 .back-link {
   align-items: center;
+  background: none;
+  border: 0;
   color: #24564b;
+  cursor: pointer;
   display: inline-flex;
   font-size: 0.92rem;
   font-weight: 850;
+  gap: 8px;
   margin-bottom: 18px;
+  padding: 0;
   text-decoration: none;
 }
 

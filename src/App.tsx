@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
+  ArrowLeft,
   CalendarDays,
   ExternalLink,
   Facebook,
@@ -84,6 +85,26 @@ function getSocialIcon(platform: string): LucideIcon {
   return socialIcons[normalizedPlatform] ?? ExternalLink;
 }
 
+function BackToDirectoryButton() {
+  function handleBackClick() {
+    if (typeof window === 'undefined') return;
+
+    if (window.history.length <= 1) {
+      window.location.href = '/';
+      return;
+    }
+
+    window.history.back();
+  }
+
+  return (
+    <button className="back-link" type="button" onClick={handleBackClick}>
+      <ArrowLeft size={18} />
+      Directorio de festivales
+    </button>
+  );
+}
+
 function FestivalDetail({ festival }: { festival: Festival }) {
   const ticketUrl = getExternalUrl(festival.ticket_url);
   const officialUrl = getExternalUrl(festival.official_url || festival.festival_url);
@@ -96,9 +117,7 @@ function FestivalDetail({ festival }: { festival: Festival }) {
 
   return (
     <main className="app-shell detail-shell">
-      <a className="back-link" href="/">
-        Directorio de festivales
-      </a>
+      <BackToDirectoryButton />
 
       <article className="festival-detail">
         <div className="detail-poster">
@@ -250,9 +269,7 @@ function FestivalDetail({ festival }: { festival: Festival }) {
 function NotFoundFestival() {
   return (
     <main className="app-shell detail-shell">
-      <a className="back-link" href="/">
-        Directorio de festivales
-      </a>
+      <BackToDirectoryButton />
       <section className="empty-state">
         <ExternalLink size={26} />
         <h1>Festival no encontrado</h1>
