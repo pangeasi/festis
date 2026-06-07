@@ -1,6 +1,10 @@
 import type { CSSProperties } from 'react';
 import type { Festival } from '../types';
 
+type DatedProgramItem = NonNullable<Festival['program']>[number] & {
+  parsedDate: Date;
+};
+
 const monthFormatter = new Intl.DateTimeFormat('es-ES', {
   month: 'long',
 });
@@ -32,7 +36,52 @@ export function normalizeDate(value: string | null) {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
+function getDatedProgramItems(festival: Festival) {
+  return (festival.program ?? [])
+    .map((item) => ({ ...item, parsedDate: normalizeDate(item.date) }))
+    .filter((item): item is DatedProgramItem => item.parsedDate !== null)
+    .sort((a, b) => a.parsedDate.getTime() - b.parsedDate.getTime());
+}
+
+function getToday() {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return today;
+}
+
+function getNextProgramDate(festival: Festival) {
+  const today = getToday();
+  return getDatedProgramItems(festival).find((item) => item.parsedDate >= today)?.parsedDate ?? null;
+}
+
+function hasDistributedProgram(festival: Festival) {
+  const dates = getDatedProgramItems(festival);
+  if (dates.length < 2) return false;
+
+  const uniqueDates = new Set(dates.map((item) => item.date));
+  if (uniqueDates.size < 2) return false;
+
+  const firstDate = dates[0].parsedDate;
+  const lastDate = dates[dates.length - 1].parsedDate;
+  const spanDays = (lastDate.getTime() - firstDate.getTime()) / 86_400_000;
+
+  return spanDays > 14;
+}
+
+function hasMultiWeekDateRange(festival: Festival) {
+  const start = normalizeDate(festival.start_date);
+  const end = normalizeDate(festival.end_date);
+  if (!start || !end) return false;
+
+  const spanDays = (end.getTime() - start.getTime()) / 86_400_000;
+  return spanDays > 14;
+}
+
 export function formatFestivalDate(festival: Festival) {
+  const shouldUseProgramDate = hasDistributedProgram(festival) || hasMultiWeekDateRange(festival);
+  const nextProgramDate = shouldUseProgramDate ? getNextProgramDate(festival) : null;
+  if (nextProgramDate) return `Próxima fecha: ${dateFormatter.format(nextProgramDate)}`;
+
   const start = normalizeDate(festival.start_date);
   const end = normalizeDate(festival.end_date);
 
@@ -60,11 +109,16 @@ export function getFallbackStyle(name: string) {
 }
 
 export function getCountdownLabel(festival: Festival) {
-  const start = normalizeDate(festival.start_date);
+  const nextProgramDate = getNextProgramDate(festival);
+  const start = nextProgramDate ?? normalizeDate(festival.start_date);
   if (!start) return 'Fecha pendiente';
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const today = getToday();
+  const end = nextProgramDate ? null : normalizeDate(festival.end_date);
+
+  if (end && start < today && end >= today) {
+    return end.getTime() === today.getTime() ? 'Último día' : 'En curso';
+  }
 
   const diffDays = Math.ceil((start.getTime() - today.getTime()) / 86_400_000);
   if (diffDays < 0) return 'Ya celebrado';

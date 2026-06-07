@@ -136,6 +136,49 @@ h2 {
   cursor: not-allowed;
 }
 
+.filters-toggle {
+  align-items: center;
+  background: #fff;
+  border: 1px solid #d8d7cf;
+  border-radius: 8px;
+  color: #17211d;
+  cursor: pointer;
+  display: flex;
+  font-weight: 850;
+  gap: 12px;
+  justify-content: space-between;
+  margin-top: 12px;
+  min-height: 44px;
+  padding: 0 14px;
+  width: 100%;
+}
+
+.filters-toggle > span {
+  align-items: center;
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+
+.filters-toggle small {
+  background: #e7efe9;
+  border-radius: 999px;
+  color: #24564b;
+  font-size: 0.78rem;
+  font-weight: 850;
+  padding: 3px 8px;
+}
+
+.filters-toggle > svg:last-child {
+  flex: 0 0 auto;
+  transition: transform 160ms ease;
+}
+
+.filters-toggle[aria-expanded='true'] > svg:last-child {
+  transform: rotate(180deg);
+}
+
 .date-controls {
   align-items: end;
   display: grid;
