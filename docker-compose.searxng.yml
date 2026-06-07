@@ -1,0 +1,12 @@
+services:
+  searxng:
+    image: searxng/searxng:latest
+    restart: unless-stopped
+    expose:
+      - "8080"
+    volumes:
+      - ./searxng:/etc/searxng:rw
+    environment:
+      BASE_URL: ${BASE_URL:-http://localhost:8080/}
+      INSTANCE_NAME: ${INSTANCE_NAME:-festis-search}
+      SEARXNG_SECRET: ${SEARXNG_SECRET:-5d5f2d339c2240c5525d93741025acb78c9ea0acd2324e491b2c7e673fd61124}

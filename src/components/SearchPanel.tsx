@@ -68,7 +68,7 @@ export function SearchPanel({
           <input
             aria-label="Buscar festivales"
             onChange={(event) => onQueryChange(event.target.value)}
-            placeholder="Buscar por festival, ciudad, region o descripcion"
+            placeholder="Buscar por festival, artista, ciudad, region o descripcion"
             value={query}
           />
         </label>
