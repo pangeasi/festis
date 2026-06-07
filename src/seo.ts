@@ -1,5 +1,8 @@
 import type { SeoMetadata } from './entry-server';
 
+const UMAMI_SCRIPT =
+  '<script defer src="https://cloud.umami.is/script.js" data-website-id="07e075a2-1b91-4ce1-8341-c43227cec662"></script>';
+
 function escapeHtml(value: string) {
   return value
     .replace(/&/g, '&amp;')
@@ -37,6 +40,7 @@ export function renderHead(metadata: SeoMetadata) {
     metaTag('twitter:description', metadata.description),
     metaTag('twitter:image', metadata.imageUrl),
     metadata.imageAlt ? metaTag('twitter:image:alt', metadata.imageAlt) : null,
+    process.env.NODE_ENV === 'production' ? UMAMI_SCRIPT : null,
   ];
 
   return tags.filter(Boolean).join('\n    ');
