@@ -460,19 +460,23 @@ export function FestivalCard({ festival }: FestivalCardProps) {
   return (
     <article className="festival-card">
       <div className="poster">
-        {festival.image_full_url || festival.image_url ? (
-          <img
-            alt={festival.image_alt || festival.name}
-            loading="lazy"
-            src={festival.image_full_url || festival.image_url || ''}
-          />
-        ) : (
-          <div className="poster-fallback" style={getFallbackStyle(festival.name)}>
-            <span className="fallback-mark">{festival.name.slice(0, 2)}</span>
-            <span className="fallback-title">{festival.name}</span>
-            <span className="fallback-meta">{festival.city || festival.region || 'Festival'}</span>
-          </div>
-        )}
+        <a aria-label={`Ver ficha de ${festival.name}`} className="poster-link" href={festivalUrl}>
+          {festival.image_full_url || festival.image_url ? (
+            <img
+              alt={festival.image_alt || festival.name}
+              loading="lazy"
+              src={festival.image_full_url || festival.image_url || ''}
+            />
+          ) : (
+            <div className="poster-fallback" style={getFallbackStyle(festival.name)}>
+              <span className="fallback-mark">{festival.name.slice(0, 2)}</span>
+              <span className="fallback-title">{festival.name}</span>
+              <span className="fallback-meta">
+                {festival.city || festival.region || 'Festival'}
+              </span>
+            </div>
+          )}
+        </a>
         <span className="countdown-badge">{getCountdownLabel(festival)}</span>
       </div>
       <div className="card-body">
