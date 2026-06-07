@@ -11,7 +11,11 @@ export { renderHead };
 export type SeoMetadata = {
   canonicalUrl: string;
   description: string;
+  imageAlt?: string;
+  imageHeight?: number;
+  imageType?: string;
   imageUrl: string;
+  imageWidth?: number;
   title: string;
   type: 'website' | 'article';
   url: string;
@@ -26,10 +30,11 @@ export type RenderResult = {
 const DEFAULT_TITLE = 'Directorio de festivales';
 const DEFAULT_DESCRIPTION =
   'Agenda de festivales en Espana con fechas, ubicaciones, carteles, artistas, entradas y enlaces oficiales actualizados.';
-const DEFAULT_IMAGE =
-  festivals.find((festival) => festival.image_full_url || festival.image_url)?.image_full_url ||
-  festivals.find((festival) => festival.image_url)?.image_url ||
-  '/carteles/modofestival/bidasound-irun-image_full-ficoba-01-1-1536x864.jpg';
+const DEFAULT_IMAGE = '/opengraph.png';
+const DEFAULT_IMAGE_ALT = 'Directorio de festivales';
+const DEFAULT_IMAGE_HEIGHT = 315;
+const DEFAULT_IMAGE_TYPE = 'image/png';
+const DEFAULT_IMAGE_WIDTH = 600;
 
 function getBaseUrl(origin: string) {
   return origin.replace(/\/+$/, '');
@@ -77,7 +82,11 @@ function getMetadata(url: string, origin: string, festival: Festival | null): Se
     return {
       canonicalUrl: `${baseUrl}${pathname === '/' ? '/' : pathname}`,
       description: DEFAULT_DESCRIPTION,
+      imageAlt: DEFAULT_IMAGE_ALT,
+      imageHeight: DEFAULT_IMAGE_HEIGHT,
+      imageType: DEFAULT_IMAGE_TYPE,
       imageUrl: toAbsoluteUrl(DEFAULT_IMAGE, baseUrl),
+      imageWidth: DEFAULT_IMAGE_WIDTH,
       title: DEFAULT_TITLE,
       type: 'website',
       url: `${baseUrl}${pathname}`,

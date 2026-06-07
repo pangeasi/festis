@@ -18,7 +18,7 @@ function propertyTag(property: string, content: string) {
 }
 
 export function renderHead(metadata: SeoMetadata) {
-  return [
+  const tags = [
     `<title>${escapeHtml(metadata.title)}</title>`,
     metaTag('description', metadata.description),
     `<link rel="canonical" href="${escapeHtml(metadata.canonicalUrl)}" />`,
@@ -27,10 +27,17 @@ export function renderHead(metadata: SeoMetadata) {
     propertyTag('og:title', metadata.title),
     propertyTag('og:description', metadata.description),
     propertyTag('og:image', metadata.imageUrl),
+    metadata.imageAlt ? propertyTag('og:image:alt', metadata.imageAlt) : null,
+    metadata.imageHeight ? propertyTag('og:image:height', String(metadata.imageHeight)) : null,
+    metadata.imageType ? propertyTag('og:image:type', metadata.imageType) : null,
+    metadata.imageWidth ? propertyTag('og:image:width', String(metadata.imageWidth)) : null,
     propertyTag('og:url', metadata.url),
-    metaTag('twitter:card', 'summary_large_image'),
+    metaTag('twitter:card', metadata.imageWidth === metadata.imageHeight ? 'summary' : 'summary_large_image'),
     metaTag('twitter:title', metadata.title),
     metaTag('twitter:description', metadata.description),
     metaTag('twitter:image', metadata.imageUrl),
-  ].join('\n    ');
+    metadata.imageAlt ? metaTag('twitter:image:alt', metadata.imageAlt) : null,
+  ];
+
+  return tags.filter(Boolean).join('\n    ');
 }
