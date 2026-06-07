@@ -61,7 +61,8 @@ a {
 }
 
 .site-brand h1 {
-  max-width: 720px;
+  max-width: none;
+  white-space: nowrap;
 }
 
 .eyebrow {
@@ -1554,6 +1555,10 @@ h2 {
   .results-head {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .site-brand h1 {
+    white-space: normal;
   }
 
   .search-row,
