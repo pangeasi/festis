@@ -25,6 +25,7 @@ import {
   getCountdownLabel,
   getFallbackStyle,
 } from '../utils/festival';
+import { trackEvent } from '../analytics';
 
 type FestivalCardProps = {
   festival: Festival;
@@ -58,6 +59,12 @@ const TOOLTIP_OPEN_DELAY_MS = 160;
 const TOOLTIP_CLOSE_DELAY_MS = 180;
 
 type OfficialIconLinkProps = {
+  eventName: 'official_link_click' | 'social_link_click';
+  eventProperties: {
+    festival_slug: string;
+    platform?: string;
+    source: 'card';
+  };
   href: string;
   icon: LucideIcon;
   id: string;
@@ -291,7 +298,14 @@ function FloatingTooltip<T extends HTMLElement>({
   return isMounted ? createPortal(tooltipElement, document.body) : tooltipElement;
 }
 
-function OfficialIconLink({ href, icon: Icon, id, label }: OfficialIconLinkProps) {
+function OfficialIconLink({
+  eventName,
+  eventProperties,
+  href,
+  icon: Icon,
+  id,
+  label,
+}: OfficialIconLinkProps) {
   const triggerRef = useRef<HTMLAnchorElement>(null);
   const {
     close: closeTooltip,
@@ -317,6 +331,7 @@ function OfficialIconLink({ href, icon: Icon, id, label }: OfficialIconLinkProps
         aria-label={label}
         className="official-icon-link"
         href={href}
+        onClick={() => trackEvent(eventName, eventProperties)}
         ref={triggerRef}
         rel="noreferrer"
         target="_blank"
@@ -482,7 +497,14 @@ export function FestivalCard({ festival }: FestivalCardProps) {
   return (
     <article className="festival-card">
       <div className="poster">
-        <a aria-label={`Ver ficha de ${festival.name}`} className="poster-link" href={festivalUrl}>
+        <a
+          aria-label={`Ver ficha de ${festival.name}`}
+          className="poster-link"
+          href={festivalUrl}
+          onClick={() =>
+            trackEvent('festival_open', { festival_slug: festival.slug, source: 'poster' })
+          }
+        >
           {festival.image_full_url || festival.image_url ? (
             <img
               alt={festival.image_alt || festival.name}
@@ -740,6 +762,8 @@ export function FestivalCard({ festival }: FestivalCardProps) {
               <div className="official-links" aria-label="Enlaces oficiales y redes">
                 {officialUrl && (
                   <OfficialIconLink
+                    eventName="official_link_click"
+                    eventProperties={{ festival_slug: festival.slug, source: 'card' }}
                     href={officialUrl}
                     icon={Globe2}
                     id={`official-link-${festival.slug}`}
@@ -748,6 +772,12 @@ export function FestivalCard({ festival }: FestivalCardProps) {
                 )}
                 {socialUrls.map((social, index) => (
                   <OfficialIconLink
+                    eventName="social_link_click"
+                    eventProperties={{
+                      festival_slug: festival.slug,
+                      platform: social.platform.trim().toLowerCase(),
+                      source: 'card',
+                    }}
                     href={social.url}
                     icon={getSocialIcon(social.platform)}
                     id={`social-link-${festival.slug}-${social.platform}-${index}`}
@@ -800,7 +830,18 @@ export function FestivalCard({ festival }: FestivalCardProps) {
                         {officialSources.length > 0 && (
                           <span className="confidence-source-list">
                             {officialSources.map((source, index) => (
-                              <a href={source} key={source} rel="noreferrer" target="_blank">
+                              <a
+                                href={source}
+                                key={source}
+                                onClick={() =>
+                                  trackEvent('source_link_click', {
+                                    festival_slug: festival.slug,
+                                    source_index: index,
+                                  })
+                                }
+                                rel="noreferrer"
+                                target="_blank"
+                              >
                                 <ExternalLink size={13} />
                                 {getSourceLabel(source, index)}
                               </a>
@@ -813,7 +854,18 @@ export function FestivalCard({ festival }: FestivalCardProps) {
                 )}
                 {!confidenceLabel &&
                   visibleSources.map((source, index) => (
-                    <a href={source} key={source} rel="noreferrer" target="_blank">
+                    <a
+                      href={source}
+                      key={source}
+                      onClick={() =>
+                        trackEvent('source_link_click', {
+                          festival_slug: festival.slug,
+                          source_index: index,
+                        })
+                      }
+                      rel="noreferrer"
+                      target="_blank"
+                    >
                       <ExternalLink size={14} />
                       Fuente {index + 1}
                     </a>
@@ -827,13 +879,25 @@ export function FestivalCard({ festival }: FestivalCardProps) {
         )}
         <div className="card-actions">
           {ticketUrl && (
-            <a href={ticketUrl} rel="noreferrer" target="_blank">
+            <a
+              href={ticketUrl}
+              onClick={() =>
+                trackEvent('ticket_click', { festival_slug: festival.slug, source: 'card' })
+              }
+              rel="noreferrer"
+              target="_blank"
+            >
               <Ticket size={16} />
               Entradas
             </a>
           )}
           {festivalUrl && (
-            <a href={festivalUrl}>
+            <a
+              href={festivalUrl}
+              onClick={() =>
+                trackEvent('festival_open', { festival_slug: festival.slug, source: 'card_cta' })
+              }
+            >
               Ver ficha
             </a>
           )}

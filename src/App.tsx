@@ -23,6 +23,7 @@ import { EmptyState } from './components/EmptyState';
 import { FestivalGrid } from './components/FestivalGrid';
 import { ResultsHeader } from './components/ResultsHeader';
 import { SearchPanel } from './components/SearchPanel';
+import { trackEvent } from './analytics';
 import { festivals } from './data';
 import { useFestivalFilters } from './hooks/useFestivalFilters';
 import type { Festival } from './types';
@@ -289,6 +290,13 @@ function FestivalDetail({ festival }: { festival: Festival }) {
                     <a
                       href={social.url}
                       key={`${social.platform}-${social.url}-${index}`}
+                      onClick={() =>
+                        trackEvent('social_link_click', {
+                          festival_slug: festival.slug,
+                          platform: social.platform.trim().toLowerCase(),
+                          source: 'detail',
+                        })
+                      }
                       rel="noreferrer"
                       target="_blank"
                     >
@@ -303,13 +311,30 @@ function FestivalDetail({ festival }: { festival: Festival }) {
 
           <div className="detail-actions">
             {ticketUrl && (
-              <a href={ticketUrl} rel="noreferrer" target="_blank">
+              <a
+                href={ticketUrl}
+                onClick={() =>
+                  trackEvent('ticket_click', { festival_slug: festival.slug, source: 'detail' })
+                }
+                rel="noreferrer"
+                target="_blank"
+              >
                 <Ticket size={17} />
                 Entradas
               </a>
             )}
             {officialUrl && (
-              <a href={officialUrl} rel="noreferrer" target="_blank">
+              <a
+                href={officialUrl}
+                onClick={() =>
+                  trackEvent('official_link_click', {
+                    festival_slug: festival.slug,
+                    source: 'detail',
+                  })
+                }
+                rel="noreferrer"
+                target="_blank"
+              >
                 <Globe2 size={17} />
                 Web oficial
               </a>
@@ -345,6 +370,7 @@ function App({ initialUrl }: AppProps) {
   const [isFiltersDrawerOpen, setIsFiltersDrawerOpen] = useState(false);
   const [isSearchPanelVisible, setIsSearchPanelVisible] = useState(true);
   const searchPanelRef = useRef<HTMLDivElement>(null);
+  const hasTrackedFilterChange = useRef(false);
   const shareResetTimeout = useRef<number | null>(null);
   const closeFiltersDrawer = useCallback(() => setIsFiltersDrawerOpen(false), []);
 
@@ -373,6 +399,75 @@ function App({ initialUrl }: AppProps) {
     };
   }, []);
 
+  useEffect(() => {
+    if (festivalSlug) return undefined;
+
+    if (!hasTrackedFilterChange.current) {
+      hasTrackedFilterChange.current = true;
+      return undefined;
+    }
+
+    const timeout = window.setTimeout(() => {
+      trackEvent('filter_change', {
+        active_filters: filters.activeFilters,
+        confirmed_only: filters.confirmedOnly,
+        has_date_from: Boolean(filters.dateFrom),
+        has_date_to: Boolean(filters.dateTo),
+        has_price_filter: filters.maxPrice < filters.priceRange.max,
+        has_query: Boolean(filters.query.trim()),
+        hide_past: filters.hidePast,
+        months_count: filters.selectedMonths.length,
+        places_count: filters.selectedPlaces.length,
+        query_length: filters.query.trim().length,
+        result_count: filters.filteredFestivals.length,
+        styles_count: filters.selectedStyles.length,
+      });
+    }, 500);
+
+    return () => {
+      window.clearTimeout(timeout);
+    };
+  }, [
+    festivalSlug,
+    filters.activeFilters,
+    filters.confirmedOnly,
+    filters.dateFrom,
+    filters.dateTo,
+    filters.filteredFestivals.length,
+    filters.hidePast,
+    filters.maxPrice,
+    filters.priceRange.max,
+    filters.query,
+    filters.selectedMonths.length,
+    filters.selectedPlaces.length,
+    filters.selectedStyles.length,
+  ]);
+
+  function trackFilterReset(source: 'empty_state' | 'search_panel') {
+    trackEvent('filter_reset', {
+      active_filters: filters.activeFilters,
+      result_count: filters.filteredFestivals.length,
+      source,
+    });
+  }
+
+  function resetFilters(source: 'empty_state' | 'search_panel') {
+    trackFilterReset(source);
+    filters.resetFilters();
+  }
+
+  function openFiltersDrawer() {
+    trackEvent('filters_drawer_open', { active_filters: filters.activeFilters });
+    setIsFiltersDrawerOpen(true);
+  }
+
+  function handleToggleFiltersPanel(expanded: boolean) {
+    trackEvent('filters_panel_toggle', {
+      active_filters: filters.activeFilters,
+      expanded,
+    });
+  }
+
   async function handleShareResults() {
     const shareData = {
       text: `${filters.filteredFestivals.length} festivales encontrados`,
@@ -383,8 +478,18 @@ function App({ initialUrl }: AppProps) {
     try {
       if (navigator.share && (!navigator.canShare || navigator.canShare(shareData))) {
         await navigator.share(shareData);
+        trackEvent('results_share', {
+          active_filters: filters.activeFilters,
+          method: 'native_share',
+          result_count: filters.filteredFestivals.length,
+        });
       } else {
         await navigator.clipboard.writeText(filters.shareUrl);
+        trackEvent('results_share', {
+          active_filters: filters.activeFilters,
+          method: 'clipboard',
+          result_count: filters.filteredFestivals.length,
+        });
       }
 
       setIsShareCopied(true);
@@ -393,6 +498,11 @@ function App({ initialUrl }: AppProps) {
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') return;
       await navigator.clipboard.writeText(filters.shareUrl);
+      trackEvent('results_share', {
+        active_filters: filters.activeFilters,
+        method: 'clipboard',
+        result_count: filters.filteredFestivals.length,
+      });
       setIsShareCopied(true);
     }
   }
@@ -414,10 +524,11 @@ function App({ initialUrl }: AppProps) {
     onHidePastChange: filters.setHidePast,
     onMaxPriceChange: filters.setMaxPrice,
     onQueryChange: filters.setQuery,
-    onReset: filters.resetFilters,
+    onReset: () => resetFilters('search_panel'),
     onSelectedMonthsChange: filters.setSelectedMonths,
     onSelectedPlacesChange: filters.setSelectedPlaces,
     onSelectedStylesChange: filters.setSelectedStyles,
+    onToggleFiltersPanel: handleToggleFiltersPanel,
     onToggleValue: filters.toggleValue,
     options: filters.options,
     priceRange: filters.priceRange,
@@ -451,13 +562,13 @@ function App({ initialUrl }: AppProps) {
 
       <FestivalGrid festivals={filters.filteredFestivals} />
 
-      {!filters.filteredFestivals.length && <EmptyState onReset={filters.resetFilters} />}
+      {!filters.filteredFestivals.length && <EmptyState onReset={() => resetFilters('empty_state')} />}
 
       {!isSearchPanelVisible && !isFiltersDrawerOpen && (
         <button
           aria-label="Abrir buscador y filtros"
           className="floating-filters-button"
-          onClick={() => setIsFiltersDrawerOpen(true)}
+          onClick={openFiltersDrawer}
           type="button"
         >
           <SlidersHorizontal size={20} />

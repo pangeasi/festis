@@ -27,6 +27,7 @@ type SearchPanelProps = {
   onSelectedMonthsChange: (updater: (current: string[]) => string[]) => void;
   onSelectedPlacesChange: (updater: (current: string[]) => string[]) => void;
   onSelectedStylesChange: (updater: (current: string[]) => string[]) => void;
+  onToggleFiltersPanel?: (expanded: boolean) => void;
   onToggleValue: (values: string[], value: string) => string[];
 };
 
@@ -54,6 +55,7 @@ export function SearchPanel({
   onSelectedMonthsChange,
   onSelectedPlacesChange,
   onSelectedStylesChange,
+  onToggleFiltersPanel,
   onToggleValue,
 }: SearchPanelProps) {
   const advancedFiltersId = useId();
@@ -94,7 +96,13 @@ export function SearchPanel({
           aria-controls={advancedFiltersId}
           aria-expanded={showAdvancedFilters}
           className="filters-toggle"
-          onClick={() => setIsFiltersExpanded((current) => !current)}
+          onClick={() => {
+            setIsFiltersExpanded((current) => {
+              const nextExpanded = !current;
+              onToggleFiltersPanel?.(nextExpanded);
+              return nextExpanded;
+            });
+          }}
           type="button"
         >
           <span>
