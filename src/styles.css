@@ -41,6 +41,29 @@ a {
   margin-bottom: 22px;
 }
 
+.site-brand {
+  align-items: center;
+  display: flex;
+  gap: 18px;
+}
+
+.site-logo {
+  flex: 0 0 auto;
+  display: inline-flex;
+  width: clamp(56px, 7vw, 88px);
+}
+
+.site-logo img {
+  aspect-ratio: 1;
+  display: block;
+  height: auto;
+  width: 100%;
+}
+
+.site-brand h1 {
+  max-width: 720px;
+}
+
 .eyebrow {
   color: #7b5f2d;
   font-size: 0.78rem;
@@ -492,6 +515,21 @@ h2 {
   display: grid;
   gap: 18px;
   grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.festival-grid--virtual {
+  display: block;
+  position: relative;
+}
+
+.festival-grid-row {
+  display: grid;
+  gap: 18px;
+  left: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
+  will-change: transform;
 }
 
 .festival-card {

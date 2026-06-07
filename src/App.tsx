@@ -309,8 +309,10 @@ function App({ initialUrl }: AppProps) {
   return (
     <main className="app-shell">
       <header className="topbar">
-        <div>
-          <p className="eyebrow">Agenda</p>
+        <div className="site-brand">
+          <a className="site-logo" href="/" aria-label="Directorio de festivales">
+            <img src="/logo/logo.svg" alt="" />
+          </a>
           <h1>Directorio de festivales</h1>
         </div>
       </header>
