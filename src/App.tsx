@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { ComponentProps } from 'react';
 import {
   ArrowLeft,
   CalendarDays,
@@ -11,8 +12,10 @@ import {
   Mic2,
   Music2,
   ReceiptText,
+  SlidersHorizontal,
   Ticket,
   Twitter,
+  X,
   Youtube,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -29,6 +32,14 @@ type AppProps = {
   initialUrl?: string;
 };
 
+type SearchPanelSharedProps = ComponentProps<typeof SearchPanel>;
+
+type FiltersDrawerProps = {
+  isOpen: boolean;
+  onClose: () => void;
+  searchPanelProps: SearchPanelSharedProps;
+};
+
 function getInitialUrl(initialUrl?: string) {
   if (initialUrl) return initialUrl;
   if (typeof window === 'undefined') return '/';
@@ -39,6 +50,50 @@ function getFestivalSlug(initialUrl?: string) {
   const pathname = new URL(getInitialUrl(initialUrl), 'http://localhost').pathname;
   const match = pathname.match(/^\/festival\/([^/]+)\/?$/);
   return match ? decodeURIComponent(match[1]) : null;
+}
+
+function FiltersDrawer({ isOpen, onClose, searchPanelProps }: FiltersDrawerProps) {
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose();
+    };
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen, onClose]);
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="filters-drawer-overlay" onClick={onClose}>
+      <aside
+        aria-label="Buscador y filtros"
+        className="filters-drawer"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="filters-drawer-header">
+          <div>
+            <h2>Buscar festivales</h2>
+            {searchPanelProps.activeFilters > 0 && (
+              <small>{searchPanelProps.activeFilters} filtros activos</small>
+            )}
+          </div>
+          <button aria-label="Cerrar filtros" onClick={onClose} type="button">
+            <X size={20} />
+          </button>
+        </div>
+        <SearchPanel {...searchPanelProps} forceExpanded />
+      </aside>
+    </div>
+  );
 }
 
 function getExternalUrl(value: string | null | undefined) {
@@ -287,11 +342,34 @@ function App({ initialUrl }: AppProps) {
     : null;
   const filters = useFestivalFilters(festivals, stableInitialUrl);
   const [isShareCopied, setIsShareCopied] = useState(false);
+  const [isFiltersDrawerOpen, setIsFiltersDrawerOpen] = useState(false);
+  const [isSearchPanelVisible, setIsSearchPanelVisible] = useState(true);
+  const searchPanelRef = useRef<HTMLDivElement>(null);
   const shareResetTimeout = useRef<number | null>(null);
+  const closeFiltersDrawer = useCallback(() => setIsFiltersDrawerOpen(false), []);
 
   useEffect(() => {
     return () => {
       if (shareResetTimeout.current) window.clearTimeout(shareResetTimeout.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    const searchPanel = searchPanelRef.current;
+
+    if (!searchPanel || typeof IntersectionObserver === 'undefined') return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsSearchPanelVisible(entry.isIntersecting);
+      },
+      { threshold: 0 },
+    );
+
+    observer.observe(searchPanel);
+
+    return () => {
+      observer.disconnect();
     };
   }, []);
 
@@ -323,6 +401,32 @@ function App({ initialUrl }: AppProps) {
     return selectedFestival ? <FestivalDetail festival={selectedFestival} /> : <NotFoundFestival />;
   }
 
+  const searchPanelProps = {
+    activeFilters: filters.activeFilters,
+    confirmedOnly: filters.confirmedOnly,
+    dateFrom: filters.dateFrom,
+    dateTo: filters.dateTo,
+    hidePast: filters.hidePast,
+    maxPrice: filters.maxPrice,
+    onConfirmedOnlyChange: filters.setConfirmedOnly,
+    onDateFromChange: filters.setDateFrom,
+    onDateToChange: filters.setDateTo,
+    onHidePastChange: filters.setHidePast,
+    onMaxPriceChange: filters.setMaxPrice,
+    onQueryChange: filters.setQuery,
+    onReset: filters.resetFilters,
+    onSelectedMonthsChange: filters.setSelectedMonths,
+    onSelectedPlacesChange: filters.setSelectedPlaces,
+    onSelectedStylesChange: filters.setSelectedStyles,
+    onToggleValue: filters.toggleValue,
+    options: filters.options,
+    priceRange: filters.priceRange,
+    query: filters.query,
+    selectedMonths: filters.selectedMonths,
+    selectedPlaces: filters.selectedPlaces,
+    selectedStyles: filters.selectedStyles,
+  } satisfies SearchPanelSharedProps;
+
   return (
     <main className="app-shell">
       <header className="topbar">
@@ -334,31 +438,9 @@ function App({ initialUrl }: AppProps) {
         </div>
       </header>
 
-      <SearchPanel
-        activeFilters={filters.activeFilters}
-        confirmedOnly={filters.confirmedOnly}
-        dateFrom={filters.dateFrom}
-        dateTo={filters.dateTo}
-        hidePast={filters.hidePast}
-        maxPrice={filters.maxPrice}
-        onConfirmedOnlyChange={filters.setConfirmedOnly}
-        onDateFromChange={filters.setDateFrom}
-        onDateToChange={filters.setDateTo}
-        onHidePastChange={filters.setHidePast}
-        onMaxPriceChange={filters.setMaxPrice}
-        onQueryChange={filters.setQuery}
-        onReset={filters.resetFilters}
-        onSelectedMonthsChange={filters.setSelectedMonths}
-        onSelectedPlacesChange={filters.setSelectedPlaces}
-        onSelectedStylesChange={filters.setSelectedStyles}
-        onToggleValue={filters.toggleValue}
-        options={filters.options}
-        priceRange={filters.priceRange}
-        query={filters.query}
-        selectedMonths={filters.selectedMonths}
-        selectedPlaces={filters.selectedPlaces}
-        selectedStyles={filters.selectedStyles}
-      />
+      <div ref={searchPanelRef}>
+        <SearchPanel {...searchPanelProps} />
+      </div>
 
       <ResultsHeader
         activeFilters={filters.activeFilters}
@@ -370,6 +452,25 @@ function App({ initialUrl }: AppProps) {
       <FestivalGrid festivals={filters.filteredFestivals} />
 
       {!filters.filteredFestivals.length && <EmptyState onReset={filters.resetFilters} />}
+
+      {!isSearchPanelVisible && !isFiltersDrawerOpen && (
+        <button
+          aria-label="Abrir buscador y filtros"
+          className="floating-filters-button"
+          onClick={() => setIsFiltersDrawerOpen(true)}
+          type="button"
+        >
+          <SlidersHorizontal size={20} />
+          <span>Filtros</span>
+          {filters.activeFilters > 0 && <small>{filters.activeFilters}</small>}
+        </button>
+      )}
+
+      <FiltersDrawer
+        isOpen={isFiltersDrawerOpen}
+        onClose={closeFiltersDrawer}
+        searchPanelProps={searchPanelProps}
+      />
     </main>
   );
 }

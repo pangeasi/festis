@@ -8,6 +8,7 @@ type SearchPanelProps = {
   confirmedOnly: boolean;
   dateFrom: string;
   dateTo: string;
+  forceExpanded?: boolean;
   hidePast: boolean;
   maxPrice: number;
   options: FilterOptions;
@@ -34,6 +35,7 @@ export function SearchPanel({
   confirmedOnly,
   dateFrom,
   dateTo,
+  forceExpanded = false,
   hidePast,
   maxPrice,
   options,
@@ -56,6 +58,7 @@ export function SearchPanel({
 }: SearchPanelProps) {
   const advancedFiltersId = useId();
   const [isFiltersExpanded, setIsFiltersExpanded] = useState(false);
+  const showAdvancedFilters = forceExpanded || isFiltersExpanded;
   const priceFormatter = new Intl.NumberFormat('es-ES', {
     currency: 'EUR',
     maximumFractionDigits: 0,
@@ -64,7 +67,7 @@ export function SearchPanel({
   const priceLabel = maxPrice <= 0 ? 'Gratuito' : `Hasta ${priceFormatter.format(maxPrice)}`;
 
   return (
-    <section className="search-panel">
+    <section className={`search-panel${forceExpanded ? ' search-panel--drawer' : ''}`}>
       <div className="search-row">
         <label className="search-box">
           <Search size={20} />
@@ -86,22 +89,24 @@ export function SearchPanel({
         </button>
       </div>
 
-      <button
-        aria-controls={advancedFiltersId}
-        aria-expanded={isFiltersExpanded}
-        className="filters-toggle"
-        onClick={() => setIsFiltersExpanded((current) => !current)}
-        type="button"
-      >
-        <span>
-          <SlidersHorizontal size={18} />
-          Filtros
-          {activeFilters > 0 && <small>{activeFilters} activos</small>}
-        </span>
-        <ChevronDown size={18} />
-      </button>
+      {!forceExpanded && (
+        <button
+          aria-controls={advancedFiltersId}
+          aria-expanded={showAdvancedFilters}
+          className="filters-toggle"
+          onClick={() => setIsFiltersExpanded((current) => !current)}
+          type="button"
+        >
+          <span>
+            <SlidersHorizontal size={18} />
+            Filtros
+            {activeFilters > 0 && <small>{activeFilters} activos</small>}
+          </span>
+          <ChevronDown size={18} />
+        </button>
+      )}
 
-      <div className="advanced-filters" hidden={!isFiltersExpanded} id={advancedFiltersId}>
+      <div className="advanced-filters" hidden={!showAdvancedFilters} id={advancedFiltersId}>
         <div className="date-controls">
           <label>
             Desde
