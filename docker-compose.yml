@@ -1,0 +1,13 @@
+services:
+  searxng:
+    image: searxng/searxng:latest
+    container_name: festis-searxng
+    ports:
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - ./searxng:/etc/searxng:rw
+    environment:
+      - BASE_URL=http://localhost:8080/
+      - INSTANCE_NAME=festis-search
+      - SEARXNG_SECRET=5d5f2d339c2240c5525d93741025acb78c9ea0acd2324e491b2c7e673fd61124
+    restart: unless-stopped

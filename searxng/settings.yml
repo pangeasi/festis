@@ -1,0 +1,12 @@
+use_default_settings: true
+
+general:
+  instance_name: "festis-search"
+
+server:
+  secret_key: "5d5f2d339c2240c5525d93741025acb78c9ea0acd2324e491b2c7e673fd61124"
+
+search:
+  formats:
+    - html
+    - json
