@@ -15,6 +15,14 @@ const templatePath = isProduction
 const app = express();
 let vite;
 
+function isAdminPath(reqPath) {
+  return reqPath === '/admin' || reqPath.startsWith('/admin/');
+}
+
+function isAdminApiPath(reqPath) {
+  return reqPath === '/api/admin' || reqPath.startsWith('/api/admin/');
+}
+
 if (!isProduction) {
   const { createServer } = await import('vite');
   vite = await createServer({
@@ -23,6 +31,18 @@ if (!isProduction) {
   });
   app.use(vite.middlewares);
 } else {
+  app.use((req, res, next) => {
+    if (isAdminApiPath(req.path)) {
+      return res.status(404).json({ error: 'Not found' });
+    }
+
+    if (isAdminPath(req.path)) {
+      return res.status(404).type('text/plain').send('Not found');
+    }
+
+    return next();
+  });
+
   app.use(
     '/assets',
     express.static(path.resolve(clientDist, 'assets'), {

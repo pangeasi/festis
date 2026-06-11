@@ -13,6 +13,7 @@ export type Festival = {
   image_url: string | null;
   image_full_url: string | null;
   image_alt: string | null;
+  image_candidates?: FestivalImageCandidate[];
   edition: string | null;
   countdown: string | null;
   status: string | null;
@@ -33,6 +34,17 @@ export type Festival = {
   lineup_extraction_method: 'llm' | 'heuristic' | null;
   lineup_model: string | null;
   lineup_extracted_at: string | null;
+};
+
+export type FestivalImageCandidate = {
+  original_url: string;
+  local_url: string;
+  alt: string | null;
+  width: number | null;
+  height: number | null;
+  source: string | null;
+  score: number | null;
+  downloaded_at: string | null;
 };
 
 export type FestivalSocialUrl = {
