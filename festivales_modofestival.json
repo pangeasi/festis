@@ -13,9 +13,9 @@
       "slug": "gulliver-fest",
       "festival_url": "https://gulliverfest.naron.gal/",
       "ticket_url": "https://gulliverfest.naron.gal/entradas/",
-      "date_text": null,
-      "start_date": null,
-      "end_date": null,
+      "date_text": "06/08/2026 - 09/08/2026",
+      "start_date": "2026-08-06",
+      "end_date": "2026-08-09",
       "location": "Narón",
       "city": "Narón",
       "region": "A Coruña",
@@ -33,7 +33,7 @@
       "edition": "2026",
       "countdown": null,
       "status": "upcoming",
-      "description": "Festival de cultura viajera que ofrece una conexión entre música, viajes, naturaleza y el deporte para dejar volar las almas viajeras en busca de nuevos destinos. Se celebra en Narón, A Coruña.",
+      "description": "Festival de cultura viajera que ofrece una conexión entre música, viajes, literatura y actividades para niños y niñas. Se celebra en plena naturaleza a orillas del río Xubia en Narón, A Coruña.",
       "artists": [
         "MUYAYO – RIFF",
         "HAFA – AFROSWEET",
@@ -42,17 +42,19 @@
         "FARRA FANFARRA",
         "LIDIA INDIA",
         "ANTON COUCHEIRO",
-        "DESTRONAUTS"
+        "DESTRONAUTS",
+        "WAHIRA",
+        "JEAN PHILIPE KIKOLAS"
       ],
       "official_url": "https://gulliverfest.naron.gal/",
       "social_urls": [
         {
-          "platform": "facebook",
-          "url": "https://www.facebook.com/gulliverfest/"
+          "platform": "instagram",
+          "url": "https://www.instagram.com/gulliverfest/"
         },
         {
-          "platform": "instagram",
-          "url": "https://www.instagram.com/gulliverfest"
+          "platform": "facebook",
+          "url": "https://www.facebook.com/gulliverfest/"
         }
       ],
       "ticket_prices": [],
@@ -61,7 +63,7 @@
       "official_sources": [
         "https://gulliverfest.naron.gal/"
       ],
-      "official_enriched_at": "2026-06-11T06:48:24.556Z",
+      "official_enriched_at": "2026-06-11T07:17:30.512Z",
       "official_enrichment_model": "gemma4:latest",
       "official_enrichment_confidence": "high",
       "lineup_url": "https://gulliverfest.naron.gal/",
@@ -69,7 +71,7 @@
       "lineup_confidence": "high",
       "lineup_extraction_method": "llm",
       "lineup_model": "gemma4:latest",
-      "lineup_extracted_at": "2026-06-11T06:48:24.556Z"
+      "lineup_extracted_at": "2026-06-11T07:17:30.512Z"
     },
     {
       "name": "Bidasound Irun 2026",
